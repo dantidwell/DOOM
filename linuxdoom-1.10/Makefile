@@ -11,8 +11,8 @@ LDFLAGS=-L/usr/X11R6/lib
 LIBS=-lXext -lX11 -lnsl -lm
 
 # subdirectory for objects
-O=linux
-
+O=linux/obj
+B=linux/bin
 # not too sophisticated dependency
 OBJS=				\
 		$(O)/doomdef.o		\
@@ -77,15 +77,19 @@ OBJS=				\
 		$(O)/info.o				\
 		$(O)/sounds.o
 
-all:	 $(O)/linuxxdoom
+all:	 $(B)/doom $(B)/doom.wad
 
 clean:
-	rm -f *.o *~ *.flc
-	rm -f linux/*
+	rm -rf *.o *~ *.flc
+	rm -f linux/bin/*
+	rm -f linux/obj/*
 
-$(O)/linuxxdoom:	$(OBJS) $(O)/i_main.o
+$(B)/doom.wad:
+	cp data/doom.wad $@
+
+$(B)/doom:	$(OBJS) $(O)/i_main.o
 	$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS) $(O)/i_main.o \
-	-o $(O)/linuxxdoom $(LIBS)
+	-o $(B)/doom $(LIBS)
 
 $(O)/%.o:	%.c
 	$(CC) $(CFLAGS) -c $< -o $@
