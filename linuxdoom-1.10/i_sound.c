@@ -853,38 +853,38 @@ void I_HandleSoundTimer(int ignore)
 int I_SoundSetTimer(int duration_of_tick)
 {
   // Needed for gametick clockwork.
-  struct itimerval value;
-  struct itimerval ovalue;
-  struct sigaction act;
-  struct sigaction oact;
+  // struct itimerval value;
+  // struct itimerval ovalue;
+  // struct sigaction act;
+  // struct sigaction oact;
 
-  int res;
+  // int res;
 
   // This sets to SA_ONESHOT and SA_NOMASK, thus we can not use it.
   //     signal( _sig, handle_SIG_TICK );
 
   // Now we have to change this attribute for repeated calls.
-  act.sa_handler = I_HandleSoundTimer;
-#ifndef sun
+  // act.sa_handler = I_HandleSoundTimer;
+// #ifndef sun
   // ac	t.sa_mask = _sig;
-#endif
-  act.sa_flags = SA_RESTART;
+// #endif
+  // act.sa_flags = SA_RESTART;
 
-  sigaction(sig, &act, &oact);
+  // sigaction(sig, &act, &oact);
 
-  value.it_interval.tv_sec = 0;
-  value.it_interval.tv_usec = duration_of_tick;
-  value.it_value.tv_sec = 0;
-  value.it_value.tv_usec = duration_of_tick;
+  // value.it_interval.tv_sec = 0;
+  // value.it_interval.tv_usec = duration_of_tick;
+  // value.it_value.tv_sec = 0;
+  // value.it_value.tv_usec = duration_of_tick;
 
   // Error is -1.
-  res = setitimer(itimer, &value, &ovalue);
+  // res = setitimer(itimer, &value, &ovalue);
 
   // Debug.
-  if (res == -1)
-    fprintf(stderr, "I_SoundSetTimer: interrupt n.a.\n");
+  // if (res == -1)
+  //   fprintf(stderr, "I_SoundSetTimer: interrupt n.a.\n");
 
-  return res;
+  // return res;
 }
 
 // Remove the interrupt. Set duration to zero.
