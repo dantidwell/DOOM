@@ -59,11 +59,11 @@
 // and possibly other attributes.
 //
 typedef struct {
-  short originx;
-  short originy;
-  short patch;
-  short stepdir;
-  short colormap;
+  int16_t originx;
+  int16_t originy;
+  int16_t patch;
+  int16_t stepdir;
+  int16_t colormap;
 } mappatch_t;
 
 //
@@ -77,7 +77,7 @@ typedef struct {
   int16_t width;
   int16_t height;
   int16_t patchcount;
-  mappatch_t patches[1];
+  mappatch_t patches[];
 } maptexture_t;
 
 // A single patch from a texture definition,
@@ -346,7 +346,6 @@ void R_InitTextures(void) {
   mappatch_t *mpatch;
   texpatch_t *patch;
 
-  int i;
   int j;
 
   int *maptex;
@@ -379,7 +378,7 @@ void R_InitTextures(void) {
   name_p = names + 4;
   patchlookup = alloca(nummappatches * sizeof(*patchlookup));
 
-  for (i = 0; i < nummappatches; i++) {
+  for (int32_t i = 0; i < nummappatches; i++) {
     strncpy(name, name_p + i * 8, 8);
     patchlookup[i] = W_CheckNumForName(name);
   }
@@ -419,17 +418,15 @@ void R_InitTextures(void) {
   temp2 = W_GetNumForName("S_END") - 1;
   temp3 = ((temp2 - temp1 + 63) / 64) + ((numtextures + 63) / 64);
   printf("[");
-  for (i = 0; i < temp3; i++)
+  for (int32_t i = 0; i < temp3; i++)
     printf(" ");
   printf("         ]");
-  for (i = 0; i < temp3; i++)
+  for (int32_t i = 0; i < temp3; i++)
     printf("\x8");
   printf("\x8\x8\x8\x8\x8\x8\x8\x8\x8\x8");
 
-  for (i = 0; i < numtextures; i++, directory++) {
-    maptexture_t mapTexture;
-    int i = 0;
-
+  for (int32_t i = 0; i < numtextures; i++, directory++) {
+    maptexture_t mapTexture = {0};
     if (!(i & 63)) {
       printf(".");
     }
@@ -449,42 +446,58 @@ void R_InitTextures(void) {
       uint8_t *base = (uint8_t *) maptex + offset;
       memcpy(mapTexture.name, base, sizeof(mapTexture.name));
       base += sizeof(mapTexture.name);
+     
+      // skip masked for now
+      mapTexture.masked = false;
+      base += 4;
+
+      memcpy(&mapTexture.width, base, sizeof(mapTexture.width));
+      base += sizeof(mapTexture.width);
+
+      memcpy(&mapTexture.height, base, sizeof(mapTexture.height));
+      base += sizeof(mapTexture.height);
+
+      base += 4; // skips deprecated 32-bit void ** in original codebase
+
+      memcpy(&mapTexture.patchcount, base, sizeof(mapTexture.patchcount));
+      base += sizeof(mapTexture.patchcount);
+
+      // read texture patches
+
     }
-  }
 
-  texture = textures[i] =
-      Z_Malloc(sizeof(texture_t) +
-                   sizeof(texpatch_t) * (SHORT(mapTexture.patchcount) - 1),
-               PU_STATIC, 0);
+    texture = textures[i] =
+        Z_Malloc(sizeof(texture_t) +
+                    sizeof(texpatch_t) * (SHORT(mapTexture.patchcount) - 1),
+                PU_STATIC, 0);
 
-  texture->width = SHORT(mapTexture.width);
-  texture->height = SHORT(mapTexture.height);
-  texture->patchcount = SHORT(mapTexture.patchcount);
+    texture->width = SHORT(mapTexture.width);
+    texture->height = SHORT(mapTexture.height);
+    texture->patchcount = SHORT(mapTexture.patchcount);
 
-  memcpy(texture->name, mapTexture.name, sizeof(texture->name));
-  mapTexture.
-  mpatch = mapTexture.patches[0];
-  patch = &texture->patches[0];
+    memcpy(texture->name, mapTexture.name, sizeof(texture->name));
+    mpatch = mapTexture.patches;
+    patch = &texture->patches[0];
 
-  for (j = 0; j < texture->patchcount; j++, mpatch++, patch++) {
-    patch->originx = SHORT(mpatch->originx);
-    patch->originy = SHORT(mpatch->originy);
-    patch->patch = patchlookup[SHORT(mpatch->patch)];
-    if (patch->patch == -1) {
-      I_Error("R_InitTextures: Missing patch in texture %s", texture->name);
+    for (j = 0; j < texture->patchcount; j++, mpatch++, patch++) {
+      patch->originx = SHORT(mpatch->originx);
+      patch->originy = SHORT(mpatch->originy);
+      patch->patch = patchlookup[SHORT(mpatch->patch)];
+      if (patch->patch == -1) {
+        I_Error("R_InitTextures: Missing patch in texture %s", texture->name);
+      }
     }
-  }
-  texturecolumnlump[i] = Z_Malloc(texture->width * 2, PU_STATIC, 0);
-  texturecolumnofs[i] = Z_Malloc(texture->width * 2, PU_STATIC, 0);
+    texturecolumnlump[i] = Z_Malloc(texture->width * 2, PU_STATIC, 0);
+    texturecolumnofs[i] = Z_Malloc(texture->width * 2, PU_STATIC, 0);
 
-  j = 1;
-  while (j * 2 <= texture->width)
-    j <<= 1;
+    j = 1;
+    while (j * 2 <= texture->width)
+      j <<= 1;
 
-  texturewidthmask[i] = j - 1;
-  textureheight[i] = texture->height << FRACBITS;
+    texturewidthmask[i] = j - 1;
+    textureheight[i] = texture->height << FRACBITS;
 
-  totalwidth += texture->width;
+    totalwidth += texture->width;
 }
 
 Z_Free(maptex1);
@@ -492,13 +505,13 @@ if (maptex2)
   Z_Free(maptex2);
 
 // Precalculate whatever possible.
-for (i = 0; i < numtextures; i++)
+for (int32_t i = 0; i < numtextures; i++)
   R_GenerateLookup(i);
 
 // Create translation table for global animation.
 texturetranslation = Z_Malloc((numtextures + 1) * 4, PU_STATIC, 0);
 
-for (i = 0; i < numtextures; i++)
+for (int32_t i = 0; i < numtextures; i++)
   texturetranslation[i] = i;
 }
 
