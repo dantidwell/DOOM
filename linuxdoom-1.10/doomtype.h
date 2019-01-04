@@ -23,16 +23,11 @@
 #ifndef __DOOMTYPE__
 #define __DOOMTYPE__
 
-#ifndef __BYTEBOOL__
-#define __BYTEBOOL__
-// Fixed to use builtin bool type with C++.
-#ifdef __cplusplus
+#include <stdbool.h>
+#include <stdint.h>
+
 typedef bool boolean;
-#else
-typedef enum { false, true } boolean;
-#endif
-typedef unsigned char byte;
-#endif
+typedef uint8_t byte;
 
 // Predefined with some OS.
 #ifdef LINUX
